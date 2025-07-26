@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSI Symposium 2025 Schedule</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* A subtle pattern for the background */
+        body {
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* Simple animation for loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5; /* indigo-600 */
+            animation: spin 1s ease infinite;
+        }
+        /* Add top-margin to anchor links to account for sticky nav */
+        section[id] {
+            scroll-margin-top: 10rem; /* Adjust this value based on nav height */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl font-bold tracking-tight text-slate-900">Research Science Institute Symposium 2025</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Navigation Dropdowns Container -->
+            <div class="sticky top-0 bg-slate-50/90 backdrop-blur-lg py-4 z-10 mb-8 flex flex-col sm:flex-row justify-center items-center gap-6">
+                 <!-- Session Navigation -->
+                 <div class="flex flex-col items-center gap-2">
+                    <label for="session-select" class="text-sm font-medium text-slate-700">Navigate to Session</label>
+                    <div class="relative w-full max-w-xs sm:w-56">
+                         <select id="session-select" class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-sm transition">
+                            <!-- Options will be inserted by JavaScript -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mentor Filter -->
+                 <div class="flex flex-col items-center gap-2">
+                    <label for="mentor-select" class="text-sm font-medium text-slate-700">Filter by Mentor</label>
+                    <div class="relative w-full max-w-xs sm:w-56">
+                         <select id="mentor-select" class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-sm transition">
+                            <!-- Options will be inserted by JavaScript -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Container -->
+            <div id="schedule-container" class="space-y-12">
+                <!-- Loading State -->
+                <div id="loading-state" class="flex flex-col items-center justify-center text-center py-16">
+                    <div class="spinner mb-4"></div>
+                    <p class="text-lg font-medium text-slate-600">Loading schedule from Google Sheet...</p>
+                    <p class="text-sm text-slate-500">This may take a moment.</p>
+                </div>
+                 <!-- No Results Message -->
+                <div id="no-results-message" class="hidden text-center py-16">
+                    <p class="text-lg font-medium text-slate-600">No presentations found for the selected mentor.</p>
+                    <p class="text-sm text-slate-500">Please select "All Mentors" to see the full schedule.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // --- CONFIGURATION ---
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRmuMXCzktJNnFfHD4X1dReHzHryaLmibIso5OXaGUiCW4OmolLlWuwlhzYGNeZuxe3NE3P2zo1Efcy/pub?output=csv';
+        const PROXY_URL = 'https://api.allorigins.win/raw?url=';
+
+        // --- SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadScheduleData();
+        });
+
+        async function loadScheduleData() {
+            const scheduleContainer = document.getElementById('schedule-container');
+            const sessionSelect = document.getElementById('session-select');
+            const mentorSelect = document.getElementById('mentor-select');
+            const loadingState = document.getElementById('loading-state');
+            
+            const fetchUrl = `${PROXY_URL}${encodeURIComponent(GOOGLE_SHEET_URL)}`;
+
+            try {
+                const response = await fetch(fetchUrl);
+                if (!response.ok) throw new Error(`Network response was not ok. Status: ${response.status}`);
+                
+                const csvText = await response.text();
+                if (!csvText) throw new Error("CSV data is empty. Check the Google Sheet.");
+
+                const presentations = parseCSV(csvText);
+                if (!presentations) throw new Error("Failed to parse CSV data.");
+
+                const sessions = groupPresentationsBySession(presentations);
+                
+                loadingState.style.display = 'none';
+                renderNavigation(sessions, sessionSelect);
+                renderMentorFilter(presentations, mentorSelect);
+                renderSchedule(sessions, scheduleContainer);
+
+            } catch (error) {
+                console.error("Error loading or parsing sheet data:", error);
+                let errorMessage = "Failed to load schedule. Please check the Google Sheet format and ensure it's published correctly.";
+                if (error.message.includes("Network")) {
+                    errorMessage = "Failed to fetch the schedule. The CORS proxy or your network may be temporarily unavailable.";
+                } else if (error.message.includes("parse")) {
+                    errorMessage = "Failed to process schedule data. Please check the Google Sheet for formatting errors (e.g., unclosed quotes in a title).";
+                }
+                loadingState.innerHTML = `<p class="text-lg font-medium text-red-600 text-center">${errorMessage}</p><p class="text-sm text-slate-500 mt-2 px-4 text-center">Open the browser console (F12) for technical details.</p>`;
+            }
+        }
+
+        /**
+         * A more robust CSV parser that handles quoted fields containing commas and escaped quotes.
+         * @param {string} text - The raw CSV text data.
+         * @returns {Array<Object>|null} An array of presentation objects, or null if parsing fails.
+         */
+        function parseCSV(text) {
+            try {
+                const lines = text.trim().split(/\r?\n/).filter(line => line.trim());
+                if (lines.length < 2) return [];
+                const headers = lines.shift().split(',').map(h => h.trim());
+
+                return lines.map(line => {
+                    const values = [];
+                    let currentVal = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+
+                        if (char === '"') {
+                            if (inQuotes && line[i + 1] === '"') {
+                                currentVal += '"';
+                                i++; // Skip the next quote (it's an escaped quote)
+                            } else {
+                                inQuotes = !inQuotes;
+                            }
+                        } else if (char === ',' && !inQuotes) {
+                            values.push(currentVal);
+                            currentVal = '';
+                        } else {
+                            currentVal += char;
+                        }
+                    }
+                    values.push(currentVal); // Add the last value
+
+                    const entry = {};
+                    headers.forEach((header, i) => {
+                        entry[header] = values[i] ? values[i].trim() : '';
+                    });
+                    return entry;
+                });
+            } catch (e) {
+                console.error("CSV Parsing Error:", e);
+                return null;
+            }
+        }
+
+        function groupPresentationsBySession(presentations) {
+            const sessions = {};
+            presentations.forEach(p => {
+                const sessionId = `${p['Block']}-${p['Room']}`.trim();
+                if (!p['Block'] || !p['Room']) return;
+
+                if (!sessions[sessionId]) {
+                    sessions[sessionId] = {
+                        details: { Block: p['Block'], Room: p['Room'], Date: p['Date'], Time: p['Time'] },
+                        presentations: []
+                    };
+                }
+                sessions[sessionId].presentations.push(p);
+            });
+
+            for (const sessionId in sessions) {
+                sessions[sessionId].presentations.sort((a, b) => (a['Time'] || '').localeCompare(b['Time'] || '', undefined, { numeric: true }));
+                if (sessions[sessionId].presentations.length > 0) {
+                    sessions[sessionId].details.Time = sessions[sessionId].presentations[0].Time;
+                }
+            }
+            return sessions;
+        }
+
+        function renderNavigation(sessions, selectElement) {
+            const sortedSessionIds = Object.keys(sessions).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+            
+            selectElement.innerHTML = `<option value="">Go to a session...</option>`;
+            sortedSessionIds.forEach(sessionId => {
+                const session = sessions[sessionId];
+                const cleanId = sessionId.replace(/[\s/]/g, '-');
+                const option = document.createElement('option');
+                option.value = `#session-${cleanId}`;
+                option.textContent = `Block ${session.details.Block} / Room ${session.details.Room}`;
+                selectElement.appendChild(option);
+            });
+
+            selectElement.addEventListener('change', (event) => {
+                const targetId = event.target.value;
+                if (targetId) {
+                    document.querySelector(targetId)?.scrollIntoView({ behavior: 'smooth' });
+                    event.target.selectedIndex = 0;
+                }
+            });
+        }
+        
+        function renderMentorFilter(presentations, selectElement) {
+            const mentorNames = [...new Set(presentations.map(p => p['Mentor Name']))].sort();
+            
+            selectElement.innerHTML = `<option value="all">All Mentors</option>`;
+            mentorNames.forEach(name => {
+                if(name) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    selectElement.appendChild(option);
+                }
+            });
+
+            selectElement.addEventListener('change', (event) => {
+                const selectedMentor = event.target.value;
+                filterScheduleByMentor(selectedMentor);
+            });
+        }
+
+        function filterScheduleByMentor(mentorName) {
+            const allSessions = document.querySelectorAll('.session-block');
+            const noResultsMessage = document.getElementById('no-results-message');
+            let totalVisiblePresentations = 0;
+            
+            allSessions.forEach(session => {
+                const presentationCards = session.querySelectorAll('.presentation-card');
+                let visiblePresentationsInSession = 0;
+
+                presentationCards.forEach(card => {
+                    if (mentorName === 'all' || card.dataset.mentor === mentorName) {
+                        card.style.display = 'flex';
+                        visiblePresentationsInSession++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                if (visiblePresentationsInSession > 0) {
+                    session.style.display = 'block';
+                    totalVisiblePresentations += visiblePresentationsInSession;
+                } else {
+                    session.style.display = 'none';
+                }
+            });
+
+            if (totalVisiblePresentations === 0 && mentorName !== 'all') {
+                noResultsMessage.style.display = 'block';
+            } else {
+                noResultsMessage.style.display = 'none';
+            }
+        }
+
+        function renderSchedule(sessions, container) {
+            if (Object.keys(sessions).length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500">No presentations found.</p>`;
+                return;
+            }
+            const sortedSessionIds = Object.keys(sessions).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+            for (const sessionId of sortedSessionIds) {
+                const session = sessions[sessionId];
+                const sessionDetails = session.details;
+                const cleanId = sessionId.replace(/[\s/]/g, '-');
+
+                const sessionElement = document.createElement('section');
+                sessionElement.id = `session-${cleanId}`;
+                sessionElement.className = 'session-block';
+                
+                const presentationsHTML = session.presentations.map(p => `
+                    <div class="presentation-card bg-white rounded-lg shadow-md p-6 transition hover:shadow-xl hover:-translate-y-1 flex flex-col" data-mentor="${p['Mentor Name']}">
+                         <p class="font-semibold text-slate-500 text-sm mb-2">${p['Time'] || 'No Time'}</p>
+                        <h3 class="font-bold text-lg text-indigo-600 mb-2 flex-grow">${p['Project Title'] || 'No Title'}</h3>
+                        <div>
+                            <p class="font-semibold text-slate-800">${p['Full Name'] || 'No Name'}</p>
+                            <p class="text-sm text-slate-500 mb-1">Mentor: ${p['Mentor Name'] || 'N/A'}</p>
+                            <p class="text-sm text-slate-500">${p['Affliation'] || 'No Affiliation'}</p>
+                        </div>
+                    </div>
+                `).join('');
+
+                sessionElement.innerHTML = `
+                    <div class="pb-5 border-b border-slate-200 mb-6">
+                        <h2 class="text-3xl font-semibold leading-7 text-slate-900">Session Block ${sessionDetails.Block}</h2>
+                        <div class="mt-2 flex flex-wrap items-center text-md text-slate-500 gap-x-6 gap-y-1">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-1.5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                <span>Room ${sessionDetails.Room}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-1.5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span>Starts at ${sessionDetails.Time}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-1.5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg>
+                                <span>${sessionDetails.Date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${presentationsHTML}
+                    </div>
+                `;
+                container.appendChild(sessionElement);
+            }
+        }
+    </script>
+</body>
+</html>
