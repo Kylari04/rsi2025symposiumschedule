@@ -218,7 +218,8 @@
             selectElement.innerHTML = `<option value="">Go to a session...</option>`;
             sortedSessionIds.forEach(sessionId => {
                 const session = sessions[sessionId];
-                const cleanId = sessionId.replace(/[\s/]/g, '-');
+                // Create a safe ID by replacing all non-alphanumeric characters with an underscore
+                const cleanId = sessionId.replace(/[^a-zA-Z0-9]/g, '_');
                 const option = document.createElement('option');
                 option.value = `#session-${cleanId}`;
                 option.textContent = `Block ${session.details.Block} / Room ${session.details.Room}`;
@@ -228,7 +229,11 @@
             selectElement.addEventListener('change', (event) => {
                 const targetId = event.target.value;
                 if (targetId) {
-                    document.querySelector(targetId)?.scrollIntoView({ behavior: 'smooth' });
+                    // QuerySelector needs special characters to be escaped, but it's safer to just use getElementById
+                    const targetElement = document.getElementById(targetId.substring(1));
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
                     event.target.selectedIndex = 0;
                 }
             });
@@ -296,7 +301,8 @@
             for (const sessionId of sortedSessionIds) {
                 const session = sessions[sessionId];
                 const sessionDetails = session.details;
-                const cleanId = sessionId.replace(/[\s/]/g, '-');
+                // Create a safe ID by replacing all non-alphanumeric characters with an underscore
+                const cleanId = sessionId.replace(/[^a-zA-Z0-9]/g, '_');
 
                 const sessionElement = document.createElement('section');
                 sessionElement.id = `session-${cleanId}`;
