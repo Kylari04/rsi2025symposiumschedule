@@ -218,7 +218,6 @@
             selectElement.innerHTML = `<option value="">Go to a session...</option>`;
             sortedSessionIds.forEach(sessionId => {
                 const session = sessions[sessionId];
-                // Create a safe ID by replacing all non-alphanumeric characters with an underscore
                 const cleanId = sessionId.replace(/[^a-zA-Z0-9]/g, '_');
                 const option = document.createElement('option');
                 option.value = `#session-${cleanId}`;
@@ -229,7 +228,6 @@
             selectElement.addEventListener('change', (event) => {
                 const targetId = event.target.value;
                 if (targetId) {
-                    // QuerySelector needs special characters to be escaped, but it's safer to just use getElementById
                     const targetElement = document.getElementById(targetId.substring(1));
                     if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'smooth' });
@@ -240,16 +238,16 @@
         }
         
         function renderMentorFilter(presentations, selectElement) {
-            const mentorNames = [...new Set(presentations.map(p => p['Mentor Name']))].sort();
-            
+            // Split comma-separated mentor names, trim whitespace, and get a unique, sorted list.
+            const allMentorInstances = presentations.flatMap(p => (p['Mentor Name'] || '').split(',').map(name => name.trim()));
+            const uniqueMentorNames = [...new Set(allMentorInstances)].filter(name => name).sort();
+
             selectElement.innerHTML = `<option value="all">All Mentors</option>`;
-            mentorNames.forEach(name => {
-                if(name) {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = name;
-                    selectElement.appendChild(option);
-                }
+            uniqueMentorNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                selectElement.appendChild(option);
             });
 
             selectElement.addEventListener('change', (event) => {
@@ -268,7 +266,8 @@
                 let visiblePresentationsInSession = 0;
 
                 presentationCards.forEach(card => {
-                    if (mentorName === 'all' || card.dataset.mentor === mentorName) {
+                    // Check if the card's full mentor string includes the selected mentor name.
+                    if (mentorName === 'all' || (card.dataset.mentor && card.dataset.mentor.includes(mentorName))) {
                         card.style.display = 'flex';
                         visiblePresentationsInSession++;
                     } else {
@@ -301,7 +300,6 @@
             for (const sessionId of sortedSessionIds) {
                 const session = sessions[sessionId];
                 const sessionDetails = session.details;
-                // Create a safe ID by replacing all non-alphanumeric characters with an underscore
                 const cleanId = sessionId.replace(/[^a-zA-Z0-9]/g, '_');
 
                 const sessionElement = document.createElement('section');
