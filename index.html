@@ -98,7 +98,8 @@
     <script>
         // --- CONFIGURATION ---
         const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRmuMXCzktJNnFfHD4X1dReHzHryaLmibIso5OXaGUiCW4OmolLlWuwlhzYGNeZuxe3NE3P2zo1Efcy/pub?output=csv';
-        const PROXY_URL = 'https://api.allorigins.win/raw?url=';
+        // Switched to a different CORS proxy for better reliability.
+        const PROXY_URL = 'https://corsproxy.io/?';
 
         // --- SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -111,7 +112,8 @@
             const mentorSelect = document.getElementById('mentor-select');
             const loadingState = document.getElementById('loading-state');
             
-            const fetchUrl = `${PROXY_URL}${encodeURIComponent(GOOGLE_SHEET_URL)}`;
+            // The new proxy expects the URL to be passed directly without extra encoding.
+            const fetchUrl = `${PROXY_URL}${GOOGLE_SHEET_URL}`;
 
             try {
                 const response = await fetch(fetchUrl);
